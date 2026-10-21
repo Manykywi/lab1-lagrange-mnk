@@ -1,0 +1,20 @@
+sequenceDiagram
+    actor U as Користувач
+    participant A as app.js (App)
+    participant N as animation.js
+    participant M as math.js
+    participant C as chart.js (Chart)
+    U->>A: клік «▶ Інтерполяція»
+    A->>M: lagrangeEval для перших k вузлів (k = 1…n) на 400 абсцисах
+    M-->>A: partial[k] — криві p_k(x)
+    A->>C: smooth = true (плавний автомасштаб)
+    loop кожен кадр requestAnimationFrame
+        A->>N: interpFrame(n, t, speed)
+        N-->>A: {k, prevK, phi, active}
+        A->>N: blend(partial[prevK], partial[k], phi)
+        A->>C: setModel(крива, види точок: active/normal/ghost)
+        C->>C: autoScale + згладжування меж, малювання
+    end
+    N-->>A: done
+    A->>C: smooth = false, render() — фінальний стан
+    C-->>U: повна крива Лагранжа, вузли без виділення

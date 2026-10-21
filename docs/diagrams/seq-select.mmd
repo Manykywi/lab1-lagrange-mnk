@@ -1,0 +1,18 @@
+sequenceDiagram
+    actor U as Користувач
+    participant A as app.js (App)
+    participant D as datasets.js
+    participant M as math.js
+    participant C as chart.js (Chart)
+    U->>A: клік «20» (набір точок)
+    A->>D: getSet(20)
+    D-->>A: {xs, ys}
+    A->>M: lagrangeEval × 400, dividedDifferences
+    A->>M: fitPolynomial(xs, ys, m)
+    M-->>A: модель МНК {coef, predict, fitted, residuals}
+    A->>M: metrics(ys, fitted)
+    A->>C: setModel(модель: точки, криві, відрізки)
+    A->>C: requestDraw() → requestAnimationFrame
+    C->>M: autoScale(значення Y), niceTicks(...)
+    M-->>C: межі осей, позначки
+    C-->>U: перемальований Canvas (сітка, осі, криві, легенда)

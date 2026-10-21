@@ -1,0 +1,14 @@
+sequenceDiagram
+    actor U as Користувач
+    participant C as chart.js (Chart)
+    participant A as app.js (App)
+    U->>C: pointermove (px, py)
+    C->>C: перетворення пікселів у координати даних
+    C->>C: пошук найближчого вузла (≤ 16 px)
+    alt курсор біля вузла
+        C->>A: nodeLines(i)
+        A-->>C: y, p(x), ŷ, r = y − ŷ
+    else між вузлами
+        C->>C: valueAt(крива, x) — лінійна інтерполяція вибірки
+    end
+    C-->>U: перехрестя, виділення вузла, підказка з координатами та похибкою
