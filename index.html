@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Апроксимація: Лагранж і МНК — ЛР №1, варіант 6</title>
+  <meta name="description" content="Інтерполяція Лагранжа та метод найменших квадратів: графіки, залишки, анімація побудови.">
+  <link rel="stylesheet" href="src/style.css">
+</head>
+<body>
+  <header class="top">
+    <div>
+      <h1>Апроксимація функцій: інтерполяція Лагранжа та МНК</h1>
+      <p class="sub">Лабораторна робота № 1 · варіант 6 · Белеканич М. О., ІПЗ-1</p>
+    </div>
+  </header>
+
+  <section class="controls" aria-label="Керування">
+    <div class="group" role="group" aria-labelledby="g-set">
+      <span class="glabel" id="g-set">Набір точок</span>
+      <div class="seg" id="setButtons">
+        <button type="button" data-set="5" aria-pressed="false">5</button>
+        <button type="button" data-set="10" aria-pressed="true">10</button>
+        <button type="button" data-set="20" aria-pressed="false">20</button>
+        <button type="button" data-set="custom" aria-pressed="false">Власний</button>
+      </div>
+    </div>
+
+    <div class="group" role="group" aria-labelledby="g-mode">
+      <span class="glabel" id="g-mode">Показати</span>
+      <div class="seg" id="modeButtons">
+        <button type="button" data-mode="interp" aria-pressed="false">Інтерполяція</button>
+        <button type="button" data-mode="mnk" aria-pressed="false">МНК</button>
+        <button type="button" data-mode="all" aria-pressed="true">Усі</button>
+      </div>
+    </div>
+
+    <div class="group">
+      <label class="glabel" for="degree">Ступінь МНК, m</label>
+      <select id="degree">
+        <option value="2" selected>2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+      </select>
+    </div>
+
+    <div class="group checks">
+      <label><input type="checkbox" id="extrap"> Екстраполяція ±20 %</label>
+      <label><input type="checkbox" id="focus"> Фокус на вузлах</label>
+    </div>
+  </section>
+
+  <p id="status" class="status" role="status" aria-live="polite"></p>
+
+  <main id="viewSingle" class="single">
+    <div class="charts">
+      <div class="card">
+        <canvas id="mainChart" role="img" aria-label="Графік апроксимації"></canvas>
+      </div>
+      <div class="card">
+        <canvas id="resChart" class="short" role="img" aria-label="Діаграма залишків"></canvas>
+      </div>
+    </div>
+
+    <aside class="side">
+      <div class="card pad">
+        <h2>МНК-модель</h2>
+        <div id="mnkFormula" class="formula"></div>
+      </div>
+      <div class="card pad">
+        <h2>Вузли та похибки</h2>
+        <div class="tablewrap tall"><table id="nodeTable"></table></div>
+      </div>
+      <details class="card pad">
+        <summary>Поділені різниці (форма Ньютона)</summary>
+        <div class="tablewrap"><table id="newtonTable"></table></div>
+      </details>
+      <details class="card pad" id="customBox">
+        <summary>Власний набір точок</summary>
+        <label for="customText" class="hint">По рядку на точку: «x y» (десяткова крапка).</label>
+        <textarea id="customText" rows="6" spellcheck="false" placeholder="1 5.2&#10;2 4.8&#10;3 4.5"></textarea>
+        <div class="row"><button type="button" id="customApply" class="btn">Застосувати</button></div>
+        <p id="customError" class="error" role="alert"></p>
+      </details>
+    </aside>
+  </main>
+
+  <section class="card pad metrics">
+    <h2>Порівняльна таблиця метрик (5 / 10 / 20 точок)</h2>
+    <div class="tablewrap"><table id="metricsTable"></table></div>
+    <p class="note" id="metricsNote"></p>
+  </section>
+
+  <footer class="foot">
+    Чисте JavaScript без бібліотек. Код і звіт: див. <code>README.md</code>.
+  </footer>
+
+  <script src="src/math.js"></script>
+  <script src="src/datasets.js"></script>
+  <script src="src/chart.js"></script>
+  <script src="src/app.js"></script>
+</body>
+</html>
