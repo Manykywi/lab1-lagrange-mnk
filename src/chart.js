@@ -142,7 +142,7 @@
         return false;
       }
       const v = this.view;
-      const k = 0.22;
+      const k = 0.3;
       let moving = false;
       for (const key of ['xmin', 'xmax', 'ymin', 'ymax']) {
         const scale = Math.max(1e-9, Math.abs(t.ymax - t.ymin), Math.abs(t.xmax - t.xmin));

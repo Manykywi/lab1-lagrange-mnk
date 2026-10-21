@@ -10,9 +10,15 @@ const close = (a, b, tol = 1e-9, msg) =>
 // ------------------------------------------------------------------ Лагранж
 
 test('Лагранж: поліном проходить через усі вузли (5/10/20 точок)', () => {
+  // lagrangeEval має «ярлик» для x === xₖ, тому перевірку виконуємо через базисні многочлени
+  // (без ярлика): Σ yₖ·Lₖ(xᵢ) має дорівнювати yᵢ.
   for (const n of D.SIZES) {
     const { xs, ys } = D.getSet(n);
-    for (let i = 0; i < n; i++) close(M.lagrangeEval(xs, ys, xs[i]), ys[i], 1e-12);
+    for (let i = 0; i < n; i++) {
+      let s = 0;
+      for (let k = 0; k < n; k++) s += ys[k] * M.lagrangeBasis(xs, k, xs[i]);
+      close(s, ys[i], 1e-12);
+    }
   }
 });
 

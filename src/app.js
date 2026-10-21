@@ -1,11 +1,13 @@
 /**
  * app.js — контролер застосунку: стан, обчислення, побудова моделей графіків, події UI.
  * Ітерація 3: один набір, перемикач режимів, залишки, підказки, таблиці.
+ * Ітерація 4: анімації інтерполяції та МНК, подання «Порівняння 5·10·20» (6 графіків).
  */
 (function () {
   'use strict';
   const M = window.LabMath;
   const D = window.LabData;
+  const A = window.LabAnim;
   const $ = (id) => document.getElementById(id);
 
   const state = {
@@ -15,6 +17,8 @@
     extrap: false,
     focus: false,
     custom: null,
+    view: 'single', // 'single' | 'compare'
+    anim: null, // { kind, t0, speed, d, partial, mean }
   };
 
   // ------------------------------------------------------------ Обчислення
@@ -108,13 +112,14 @@
     const c = colors();
     const segments = [];
     const legend = [];
+    const limit = o.limit == null ? d.n : o.limit;
     if (o.mode !== 'mnk') {
-      d.xs.forEach((x, i) => segments.push({ x, y0: 0, y1: d.newtonAtNodes[i] - d.ys[i], color: c.lag, marker: true, i, width: 1.4 }));
+      d.xs.forEach((x, i) => i < limit && segments.push({ x, y0: 0, y1: d.newtonAtNodes[i] - d.ys[i], color: c.lag, marker: true, i, width: 1.4 }));
       legend.push({ label: 'Лагранж: rᵢ ≈ 0 у вузлах', color: c.lag, kind: 'bar' });
     }
     if (o.mode !== 'interp') {
       const res = o.residuals || d.fit.residuals;
-      d.xs.forEach((x, i) => segments.push({ x, y0: 0, y1: res[i], color: c.mnk, marker: true, i, width: 2.2 }));
+      d.xs.forEach((x, i) => i < limit && res[i] != null && segments.push({ x, y0: 0, y1: res[i], color: c.mnk, marker: true, i, width: 2.2 }));
       legend.push({ label: `МНК: rᵢ = yᵢ − ŷᵢ`, color: c.mnk, kind: 'bar' });
     }
     return {
@@ -139,9 +144,13 @@
     if (!rafId) rafId = requestAnimationFrame(loop);
   }
 
-  function loop() {
+  function loop(now) {
     rafId = 0;
     let more = false;
+    if (state.anim) {
+      stepAnimation(now == null ? performance.now() : now);
+      more = !!state.anim;
+    }
     for (const ch of Object.values(charts)) {
       if (ch.canvas.offsetParent !== null && ch.draw()) more = true;
     }
@@ -152,6 +161,10 @@
     const common = { onRequestDraw: requestDraw };
     charts.main = new window.Chart($('mainChart'), Object.assign({ title: '', xLabel: 'x', yLabel: 'y', nodeLines: (i) => nodeLinesMain(i) }, common));
     charts.res = new window.Chart($('resChart'), Object.assign({ xLabel: 'x', yLabel: 'r = y − ŷ', nodeLines: (i) => nodeLinesRes(i) }, common));
+    for (const s of D.SIZES) {
+      charts['cmpL' + s] = new window.Chart($('cmpL' + s), Object.assign({ compact: true, xLabel: 'x', yLabel: 'y' }, common));
+      charts['cmpM' + s] = new window.Chart($('cmpM' + s), Object.assign({ compact: true, xLabel: 'x', yLabel: 'y' }, common));
+    }
     const ro = new ResizeObserver(requestDraw);
     for (const ch of Object.values(charts)) ro.observe(ch.canvas);
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
@@ -196,9 +209,126 @@
     charts.res.setLabel(`Діаграма залишків для ${d.n} точок`);
     charts.main.snapView();
     charts.res.snapView();
+    renderCompare();
     renderPanels(d);
     renderMetrics();
     renderStatus(d);
+    requestDraw();
+  }
+
+  /** Шість графіків: Лагранж та МНК для 5, 10 і 20 точок. */
+  function renderCompare() {
+    for (const s of D.SIZES) {
+      const d = compute(String(s), state.degree, state.extrap);
+      const lag = charts['cmpL' + s];
+      const mnk = charts['cmpM' + s];
+      lag.opts.title = `Лагранж · ${s} точок`;
+      mnk.opts.title = `МНК (m = ${d.m}) · ${s} точок`;
+      lag.setModel(buildMainModel(d, { mode: 'interp', focus: state.focus }));
+      mnk.setModel(buildMainModel(d, { mode: 'mnk', focus: state.focus }));
+      lag.snapView();
+      mnk.snapView();
+    }
+    $('rowLag').style.display = state.mode === 'mnk' ? 'none' : '';
+    $('rowMnk').style.display = state.mode === 'interp' ? 'none' : '';
+  }
+
+  // -------------------------------------------------------------- Анімації
+
+  function mean(a) {
+    return a.reduce((s, v) => s + v, 0) / a.length;
+  }
+
+  /** Лагранж через перші k вузлів, k = 1…n, на тих самих 400 абсцисах (для плавних переходів). */
+  function partialCurves(d) {
+    const out = [null];
+    for (let k = 1; k <= d.n; k++) {
+      const xs = d.xs.slice(0, k);
+      const ys = d.ys.slice(0, k);
+      out.push(d.lag.xs.map((x) => M.lagrangeEval(xs, ys, x)));
+    }
+    return out;
+  }
+
+  function startAnim(kind) {
+    if (state.view !== 'single') setView('single');
+    const d = current();
+    state.mode = kind === 'interp' ? 'interp' : 'mnk';
+    setPressed($('modeButtons'), 'mode', state.mode);
+    state.anim = {
+      kind,
+      d,
+      speed: Number($('speed').value),
+      t0: performance.now(),
+      partial: kind === 'interp' ? partialCurves(d) : null,
+      mean: mean(d.ys),
+    };
+    charts.main.opts.smooth = true;
+    charts.res.opts.smooth = true;
+    charts.main.snapView();
+    charts.res.snapView();
+    $('btnStop').disabled = false;
+    requestDraw();
+  }
+
+  function stopAnim() {
+    if (!state.anim) return;
+    state.anim = null;
+    charts.main.opts.smooth = false;
+    charts.res.opts.smooth = false;
+    $('btnStop').disabled = true;
+    render();
+  }
+
+  /** Один кадр анімації: оновлює моделі основного графіка та графіка залишків. */
+  function stepAnimation(now) {
+    const an = state.anim;
+    const d = an.d;
+    const c = colors();
+    const t = now - an.t0;
+    if (an.kind === 'interp') {
+      const f = A.interpFrame(d.n, t, an.speed);
+      if (f.done) return finishAnim();
+      const ys = A.blend(an.partial[f.prevK], an.partial[f.k], f.phi);
+      charts.main.setModel(
+        buildMainModel(d, {
+          mode: 'interp',
+          focus: state.focus,
+          curves: [{ label: 'Лагранж', color: c.lag, xs: d.lag.xs, ys }],
+          pointKinds: A.pointKinds(d.n, f),
+          segments: [],
+        })
+      );
+      charts.main.opts.title = `Інтерполяція Лагранжа: крок ${f.k} з ${d.n}`;
+      charts.res.setModel(buildResidualModel(d, { mode: 'interp', limit: f.k }));
+      $('status').textContent = `Анімація інтерполяції: крок ${f.k} з ${d.n} — додано вузол (${M.fmt(d.xs[f.active])}; ${M.fmt(d.ys[f.active])}), степінь полінома ${f.k - 1}`;
+    } else {
+      const f = A.mnkFrame(d.n, t, an.speed);
+      if (f.done) return finishAnim();
+      const ys = d.mnk.ys.map((y) => an.mean + f.phi * (y - an.mean));
+      const yhat = d.fit.fitted.map((y) => an.mean + f.phi * (y - an.mean));
+      const segments = d.xs.map((x, i) => ({ x, y0: yhat[i], y1: yhat[i] + f.vis[i] * (d.ys[i] - yhat[i]), color: c.mnk, width: 1.8, i }));
+      const residuals = d.ys.map((y, i) => f.vis[i] * (y - yhat[i]));
+      charts.main.setModel(buildMainModel(d, { mode: 'mnk', focus: state.focus, curves: [{ label: `МНК (m = ${d.m})`, color: c.mnk, xs: d.mnk.xs, ys }], segments }));
+      charts.main.opts.title = `МНК: поліном «росте» від горизонтальної лінії ȳ = ${M.fmt(an.mean)}`;
+      charts.res.setModel(buildResidualModel(d, { mode: 'mnk', residuals }));
+      $('status').textContent = `Анімація МНК: ${Math.round(f.t * 100)} % — від ȳ до полінома ступеня ${d.m}`;
+    }
+  }
+
+  function finishAnim() {
+    state.anim = null;
+    charts.main.opts.smooth = false;
+    charts.res.opts.smooth = false;
+    $('btnStop').disabled = true;
+    render();
+  }
+
+  function setView(v) {
+    state.view = v;
+    setPressed($('viewButtons'), 'view', v);
+    $('viewSingle').classList.toggle('off', v === 'compare');
+    $('viewCompare').classList.toggle('on', v === 'compare');
     requestDraw();
   }
 
@@ -274,6 +404,15 @@
 
   // ----------------------------------------------------------------- Події
 
+  /** Зупиняє анімацію без перерендеру (його виконає обробник зміни параметра). */
+  function dropAnim() {
+    if (!state.anim) return;
+    state.anim = null;
+    charts.main.opts.smooth = false;
+    charts.res.opts.smooth = false;
+    $('btnStop').disabled = true;
+  }
+
   function setPressed(container, attr, value) {
     container.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset[attr] === value)));
   }
@@ -306,28 +445,47 @@
   function bind() {
     $('setButtons').addEventListener('click', (e) => {
       const b = e.target.closest('button');
-      if (b) selectSet(b.dataset.set);
+      if (b) {
+        dropAnim();
+        selectSet(b.dataset.set);
+      }
     });
     $('modeButtons').addEventListener('click', (e) => {
       const b = e.target.closest('button');
       if (!b) return;
+      dropAnim();
       state.mode = b.dataset.mode;
       setPressed($('modeButtons'), 'mode', state.mode);
       render();
     });
     $('degree').addEventListener('change', (e) => {
+      dropAnim();
       state.degree = Number(e.target.value);
       render();
     });
     $('extrap').addEventListener('change', (e) => {
+      dropAnim();
       state.extrap = e.target.checked;
       render();
     });
     $('focus').addEventListener('change', (e) => {
+      dropAnim();
       state.focus = e.target.checked;
       render();
     });
-    $('customApply').addEventListener('click', applyCustom);
+    $('customApply').addEventListener('click', () => {
+      dropAnim();
+      applyCustom();
+    });
+    $('viewButtons').addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      dropAnim();
+      setView(b.dataset.view);
+    });
+    $('btnAnimInterp').addEventListener('click', () => startAnim('interp'));
+    $('btnAnimMnk').addEventListener('click', () => startAnim('mnk'));
+    $('btnStop').addEventListener('click', stopAnim);
   }
 
   function init() {
@@ -335,7 +493,7 @@
     makeCharts();
     bind();
     render();
-    window.__lab = { state, compute, render, charts, selectSet }; // для налагодження та автотестів у браузері
+    window.__lab = { state, compute, render, charts, selectSet, startAnim, stopAnim, setView }; // для налагодження та автотестів у браузері
   }
 
   init();

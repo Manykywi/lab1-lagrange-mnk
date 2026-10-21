@@ -48,6 +48,31 @@
       <label><input type="checkbox" id="extrap"> Екстраполяція ±20 %</label>
       <label><input type="checkbox" id="focus"> Фокус на вузлах</label>
     </div>
+
+    <div class="group" role="group" aria-labelledby="g-view">
+      <span class="glabel" id="g-view">Подання</span>
+      <div class="seg" id="viewButtons">
+        <button type="button" data-view="single" aria-pressed="true">Один набір</button>
+        <button type="button" data-view="compare" aria-pressed="false">Порівняння 5·10·20</button>
+      </div>
+    </div>
+
+    <div class="group" role="group" aria-labelledby="g-anim">
+      <span class="glabel" id="g-anim">Анімація</span>
+      <div class="row tight">
+        <button type="button" class="btn" id="btnAnimInterp">▶ Інтерполяція</button>
+        <button type="button" class="btn" id="btnAnimMnk">▶ МНК</button>
+        <button type="button" class="btn secondary" id="btnStop" disabled>■ Стоп</button>
+        <label class="inline" for="speed">Швидкість
+          <select id="speed">
+            <option value="0.5">0.5×</option>
+            <option value="1" selected>1×</option>
+            <option value="2">2×</option>
+            <option value="4">4×</option>
+          </select>
+        </label>
+      </div>
+    </div>
   </section>
 
   <p id="status" class="status" role="status" aria-live="polite"></p>
@@ -85,6 +110,25 @@
     </aside>
   </main>
 
+  <section id="viewCompare" class="compare" aria-label="Порівняння наборів 5, 10 та 20 точок">
+    <div id="rowLag">
+      <h2 class="cmp-row-title"><i style="background: var(--lagrange)"></i> Інтерполяція Лагранжа</h2>
+      <div class="cmp-grid">
+        <div class="card"><canvas id="cmpL5" class="small" role="img" aria-label="Лагранж, 5 точок"></canvas></div>
+        <div class="card"><canvas id="cmpL10" class="small" role="img" aria-label="Лагранж, 10 точок"></canvas></div>
+        <div class="card"><canvas id="cmpL20" class="small" role="img" aria-label="Лагранж, 20 точок"></canvas></div>
+      </div>
+    </div>
+    <div id="rowMnk">
+      <h2 class="cmp-row-title"><i style="background: var(--mnk)"></i> МНК</h2>
+      <div class="cmp-grid">
+        <div class="card"><canvas id="cmpM5" class="small" role="img" aria-label="МНК, 5 точок"></canvas></div>
+        <div class="card"><canvas id="cmpM10" class="small" role="img" aria-label="МНК, 10 точок"></canvas></div>
+        <div class="card"><canvas id="cmpM20" class="small" role="img" aria-label="МНК, 20 точок"></canvas></div>
+      </div>
+    </div>
+  </section>
+
   <section class="card pad metrics">
     <h2>Порівняльна таблиця метрик (5 / 10 / 20 точок)</h2>
     <div class="tablewrap"><table id="metricsTable"></table></div>
@@ -97,6 +141,7 @@
 
   <script src="src/math.js"></script>
   <script src="src/datasets.js"></script>
+  <script src="src/animation.js"></script>
   <script src="src/chart.js"></script>
   <script src="src/app.js"></script>
 </body>

@@ -50,6 +50,50 @@ const url = 'file://' + path.join(root, 'index.html');
   await shot('single-20-extrap', '.charts');
   await page.uncheck('#extrap');
 
+  // --- порівняння 5·10·20 (6 графіків)
+  await page.click('#viewButtons [data-view="compare"]');
+  await page.waitForTimeout(250);
+  await shot('compare-6-charts', '#viewCompare');
+  await page.check('#focus');
+  await page.waitForTimeout(200);
+  await shot('compare-6-charts-focus', '#viewCompare');
+  await page.uncheck('#focus');
+  await page.click('#viewButtons [data-view="single"]');
+
+  // --- підказка при наведенні на вузол
+  await set(10);
+  await mode('all');
+  const pos = await page.evaluate(() => {
+    const ch = window.__lab.charts.main;
+    const r = ch.canvas.getBoundingClientRect();
+    return { x: r.left + ch.sx(7), y: r.top + ch.sy(3.15) };
+  });
+  await page.mouse.move(pos.x + 2, pos.y + 1);
+  await page.waitForTimeout(200);
+  await shot('tooltip-node', '#mainChart');
+  await page.mouse.move(5, 5);
+
+  // --- анімація інтерполяції (10 точок, швидкість 1×): кадри на кроках
+  await set(10);
+  await page.click('#btnAnimInterp');
+  await page.waitForTimeout(1350);
+  await shot('anim-interp-step2', '.charts');
+  await page.waitForTimeout(3300);
+  await shot('anim-interp-step5', '.charts');
+  await page.waitForTimeout(5200);
+  await shot('anim-interp-step9', '.charts');
+  await page.waitForTimeout(2500);
+  console.log('після інтерполяції: anim =', await page.evaluate(() => window.__lab.state.anim));
+
+  // --- анімація МНК
+  await page.click('#btnAnimMnk');
+  await page.waitForTimeout(900);
+  await shot('anim-mnk-early', '.charts');
+  await page.waitForTimeout(1500);
+  await shot('anim-mnk-late', '.charts');
+  await page.waitForTimeout(1800);
+  console.log('після МНК: anim =', await page.evaluate(() => window.__lab.state.anim));
+
   console.log('Помилки/попередження консолі:', errors.length ? errors : 'немає');
   await browser.close();
 })();

@@ -145,6 +145,8 @@ details summary { cursor: pointer; font-weight: 600; font-size: 0.95rem; }
 details[open] summary { margin-bottom: 8px; }
 textarea { width: 100%; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 0.85rem; margin-top: 6px; resize: vertical; }
 .row { margin-top: 8px; display: flex; gap: 8px; }
+.row.tight { margin-top: 0; flex-wrap: wrap; align-items: center; }
+label.inline { display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; color: var(--muted); margin-left: 4px; }
 .metrics { margin-top: 12px; }
 .foot { margin-top: 16px; color: var(--muted); font-size: 0.82rem; }
 
