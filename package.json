@@ -5,7 +5,7 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "test": "node --test tests/",
+    "test": "node --test",
     "analysis": "node tools/analysis.js"
   },
   "engines": {
