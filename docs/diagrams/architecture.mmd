@@ -1,0 +1,20 @@
+flowchart LR
+    subgraph Core["Ядро (Node + браузер)"]
+        D["datasets.js<br/>набори точок, parsePoints"]
+        M["math.js<br/>Лагранж, Ньютон, МНК (QR),<br/>autoScale, niceTicks"]
+    end
+    subgraph View["Відображення (браузер)"]
+        C["chart.js<br/>клас Chart: Canvas, осі, сітка,<br/>легенда, підказки"]
+        N["animation.js<br/>таймлайни анімацій,<br/>easing"]
+        A["app.js<br/>стан, події UI,<br/>цикл requestAnimationFrame"]
+    end
+    H["index.html + style.css"]
+    D --> A
+    M --> A
+    M --> C
+    N --> A
+    C --> A
+    H --> A
+    T["tests/*.test.js<br/>(node:test)"] -.перевіряє.-> M
+    T -.перевіряє.-> D
+    T -.перевіряє.-> N
