@@ -1,0 +1,14 @@
+{
+  "name": "lab1-lagrange-mnk",
+  "version": "1.0.0",
+  "description": "ЛР №1: апроксимація функцій — інтерполяція Лагранжа та МНК (варіант 6)",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test tests/",
+    "analysis": "node tools/analysis.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
